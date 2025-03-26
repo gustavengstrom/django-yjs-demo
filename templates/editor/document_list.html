@@ -1,0 +1,46 @@
+{% extends 'base/base.html' %}
+{% load django_bootstrap5 %}
+
+{% block title %}Available Documents{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="display-5">Available Documents</h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <form method="get" action="{% url 'editor:editor' %}" class="d-flex gap-2">
+            <input type="text" name="room" class="form-control" placeholder="Document name" required>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-plus"></i> Create/Open
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    {% if documents %}
+        {% for document in documents %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ document.name }}</h5>
+                        <p class="card-text text-muted">
+                            Last updated: {{ document.updated_at|date:"M d, Y H:i" }}
+                        </p>
+                        <a href="{% url 'editor:editor' %}?room={{ document.name }}" class="btn btn-outline-primary">
+                            <i class="bi bi-pencil-square"></i> Edit
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                <p>No documents found. Create a new one using the form above.</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

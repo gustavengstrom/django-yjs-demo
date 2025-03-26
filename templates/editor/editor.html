@@ -1,0 +1,360 @@
+{% extends 'base/base.html' %}
+{% load django_bootstrap5 %}
+{% load static %}
+
+{% block title %}Editing: {{ room_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .editor-container {
+        display: flex;
+        flex-direction: column;
+        min-height: 80vh;
+    }
+    
+    .editor-toolbar {
+        border-bottom: 1px solid #dee2e6;
+        padding: 10px;
+        margin-bottom: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        background-color: #f8f9fa;
+        border-radius: 4px 4px 0 0;
+    }
+    
+    .editor-toolbar button {
+        margin-right: 5px;
+        margin-bottom: 5px;
+    }
+    
+    .editor-content {
+        flex-grow: 1;
+        border: 1px solid #dee2e6;
+        border-radius: 0 0 4px 4px;
+        padding: 20px;
+        min-height: 400px;
+        background-color: white;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        overflow-y: auto;
+    }
+    
+    .editor-content:focus {
+        outline: none;
+    }
+    
+    .collaborative-info {
+        background-color: #e9ecef;
+        padding: 10px 15px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+    }
+    
+    .user-cursor {
+        position: absolute;
+        border-left: 2px solid;
+        margin-left: -1px;
+        height: 1.2em;
+    }
+    
+    .user-label {
+        position: absolute;
+        bottom: 1.3em;
+        left: -1px;
+        font-size: 10px;
+        padding: 2px 5px;
+        white-space: nowrap;
+        border-radius: 3px;
+    }
+    
+    /* TipTap content styling */
+    .ProseMirror p {
+        margin-bottom: 1em;
+    }
+    
+    .ProseMirror h1 {
+        font-size: 1.85em;
+        margin-bottom: 0.5em;
+    }
+    
+    .ProseMirror h2 {
+        font-size: 1.5em;
+        margin-bottom: 0.5em;
+    }
+    
+    .ProseMirror h3 {
+        font-size: 1.25em;
+    }
+    
+    .ProseMirror ul, .ProseMirror ol {
+        padding-left: 2em;
+    }
+    
+    .ProseMirror blockquote {
+        border-left: 3px solid #e9ecef;
+        padding-left: 1em;
+        margin-left: 0;
+        font-style: italic;
+    }
+    
+    .ProseMirror code {
+        background-color: #f8f9fa;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-family: monospace;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1 class="display-5">
+            <i class="bi bi-file-earmark-text me-2"></i>{{ room_name }}
+        </h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'editor:document_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Documents
+        </a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="collaborative-info d-flex justify-content-between align-items-center">
+            <div>
+                <i class="bi bi-people-fill me-2"></i>
+                <span id="online-users">1 user online</span>
+            </div>
+            <div>
+                <span class="badge bg-info">Your ID: {{ client_id }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="editor-container">
+            <div class="editor-toolbar" id="editor-toolbar">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-command="heading" data-level="1">
+                    <i class="bi bi-type-h1"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-command="heading" data-level="2">
+                    <i class="bi bi-type-h2"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-command="heading" data-level="3">
+                    <i class="bi bi-type-h3"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-command="bold">
+                    <i class="bi bi-type-bold"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-command="italic">
+                    <i class="bi bi-type-italic"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-command="strike">
+                    <i class="bi bi-type-strikethrough"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-command="bulletList">
+                    <i class="bi bi-list-ul"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-command="orderedList">
+                    <i class="bi bi-list-ol"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-command="blockquote">
+                    <i class="bi bi-blockquote-left"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-command="code">
+                    <i class="bi bi-code"></i>
+                </button>
+            </div>
+            <div class="editor-content" id="editor"></div>
+        </div>
+        <div class="editor-content" id="editor2"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'bundle.js' %}" ></script>
+<script>
+    function getRandomColor() {
+        const colors = [
+            '#ff0000',
+            '#00ff00',
+            '#0000ff',
+            '#ffff00',
+            '#00ffff',
+            '#ff00ff',
+            '#000000',
+            '#ffffff',
+        ]
+        return colors[Math.floor(Math.random() * colors.length)]
+    }
+
+    function getRandomName () {
+        return "User "+ Math.random()
+    }
+</script>
+<script type="module">
+    // import { Editor } from 'https://esm.sh/@tiptap/core'
+    // import StarterKit from 'https://esm.sh/@tiptap/starter-kit'
+    // import Collaboration from 'https://esm.sh/@tiptap/extension-collaboration'
+    // import CollaborationCursor from 'https://esm.sh/@tiptap/extension-collaboration-cursor'
+    // // import { HocuspocusProvider } from "https://esm.sh/@hocuspocus/provider";
+    // import * as Y from 'https://esm.sh/yjs'
+    //import yicatYWebsocket from 'https://cdn.jsdelivr.net/npm/yicat-y-websocket@1.4.4/+esm'
+    
+    const roomName = '{{ room_name }}'; 
+    const clientId = "{{ client_id }}";
+    console.log(roomName)
+    console.log(clientId)
+    
+
+
+    window.addEventListener('load', () => {
+        // Initialize Y.js document
+        const ydoc = new Y.Doc();
+        
+        // Do NOT create the content field here
+        // The server will initialize it for us
+        // const yText = ydoc.getText('content');
+
+        const waitForOpenWebSocketConnection = (socket) => {
+            return new Promise((resolve, reject) => {
+                const maxNumberOfAttempts = 10
+                const intervalTime = 200 //ms
+
+                let currentAttempt = 0
+                const interval = setInterval(() => {
+                if (currentAttempt > maxNumberOfAttempts - 1) {
+                    clearInterval(interval)
+                    reject(new Error('Maximum number of attempts exceeded'))
+                } else if (socket.readyState === socket.OPEN) {
+                    clearInterval(interval)
+                    resolve()
+                }
+                currentAttempt++
+                }, intervalTime)
+            })
+        }
+
+        const sendWebSocketMessage = async (socket, data) => {
+            if (socket.readyState !== socket.OPEN) {
+                try {
+                    await waitForOpenWebSocketConnection(socket)
+                    socket.send(data)
+                } catch (err) {
+                    return {status: "error", message: err}
+                }
+            } else {
+                socket.send(data)
+                return {status: "success"}
+            }
+        }
+
+        function testWebsocket() {
+            const wsUrl = `ws://${window.location.host}/ws/hej`;
+            console.log("Connecting to WebSocket:", wsUrl);
+            const socket = new WebSocket(wsUrl);
+
+            // Convert a string to a binary buffer and send it
+            const encoder = new TextEncoder();
+            const binaryData = encoder.encode("Hello, binary world!");
+
+            // Initialize Y.js document
+            const ydoc = new Y.Doc();
+            const ytext = ydoc.getText("editor");
+            ytext.insert(0, "Hello, this is an initial collaborative documentzzz!");
+
+            // Encode the Y.Doc into a binary format
+            const update = Y.encodeStateAsUpdate(ydoc);
+            sendWebSocketMessage(socket, update);
+        }
+        // testWebsocket()
+
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        // Update the URL to include the room name in the path as required by YjsConsumer
+
+        let wsUrl = `${wsProtocol}//${window.location.host}/ws/${encodeURIComponent(roomName)}/`;
+        wsUrl = `${wsProtocol}//${window.location.host}/ws/`;
+        
+
+
+        // const provider = new HocuspocusProvider({
+        //     url: wsUrl,
+        //     name: "editor",  // roomName
+        //     document: ydoc,
+        //     // Ensure binary protocol is used
+        //     connect: true,  // Connect immediately
+        //     onConnect: () => {
+        //         console.log('HocuspocusProvider connected!');
+        //     },
+        //     onDisconnect: () => {
+        //         console.log('HocuspocusProvider disconnected!');
+        //     },
+        //     onStatus: (event) => {
+        //         console.log('HocuspocusProvider status:', event);
+        //     },
+        //     onMessage: (message) => {
+        //         console.log('HocuspocusProvider message:', message);
+        //         console.log(message.toString())
+        //     },
+        //     onError: (error) => {
+        //         console.error('HocuspocusProvider error:', error);
+        //     },
+        //     onAuthenticationFailed: (error) => {
+        //         console.error('HocuspocusProvider authentication failed:', error);
+        //     }
+        // });
+
+        const ytext = ydoc.getText("editor");
+        const provider = new WebsocketProvider(wsUrl, 'editor', ydoc, {connect:false});
+        provider.connect();
+        provider.on("status", (event) => {
+            console.log(`WebSocket Status: ${event.status}`); // Logs "connected" or "disconnected"
+        });
+
+        // Listen for changes in Y.Doc
+        ydoc.on("update", (update) => {
+            console.log("Sending Yjs update:", new Uint8Array(update));  
+            console.log("Y.Doc was updated! Current content:", ytext.toString());
+        });
+
+        // Simulate a change after connection
+        // setInterval(() => {
+        //     let v = Math.random() * 10;
+        //     ytext.insert(0, "Hello, WebSocketProvider! " + v.toString());
+        //     console.log("Inserted text into Y.Doc");
+        // }, 8000);
+
+        var element = document.querySelector('#editor')
+        var editor = new Editor({
+            element, 
+            extensions: [
+                StarterKit.configure({
+                    history: false,  // Disable history as we're using Yjs
+                }),
+                Collaboration.configure({
+                    document: ydoc,
+                    field: 'editor',
+                }),
+                CollaborationCursor.configure({
+                    provider: provider,
+                    user: { 
+                        name: getRandomName(), 
+                        color: getRandomColor() 
+                    },
+                }),
+            ],
+            editable: true,
+            editorProps: {
+                attributes: {
+                    class: 'border border-1 rounded p-3',
+                },
+            },
+        })
+    });
+
+</script>
+{% endblock %} 
